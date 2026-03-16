@@ -1,0 +1,15 @@
+{
+  "name": "split-da-bill",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "mobile": "npm run start --workspace=mobile",
+    "api": "npm run dev --workspace=api",
+    "docker": "docker-compose up --build"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           Int     @id @default(autoincrement())
+  name         String
+  phoneNumber  String
+  emailAddress String  @unique
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ownedParties Party[] @relation("PartyOwner")
+  partyMembers PartyMember[]
+}
+
+model Party {
+  id              Int     @id @default(autoincrement())
+  partyIdentifier String  @unique
+  name            String
+  partyOwnerId    Int
+  numOfMembers    Int
+  isActive        Boolean @default(true)
+  totalPrice      Float   @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  owner           User @relation("PartyOwner", fields: [partyOwnerId], references: [id])
+  members         PartyMember[]
+}
+
+model PartyMember {
+  id         Int   @id @default(autoincrement())
+  userId     Int
+  partyId    Int
+  totalPrice Float @default(0)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User  @relation(fields: [userId], references: [id])
+  party      Party @relation(fields: [partyId], references: [id])
+
+  menuItems  MenuItem[]
+}
+
+model MenuItem {
+  id            Int     @id @default(autoincrement())
+  name          String
+  price         Float
+  partyMemberId Int
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  partyMember   PartyMember @relation(fields: [partyMemberId], references: [id])
+}
