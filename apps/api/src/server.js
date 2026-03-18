@@ -1,18 +1,23 @@
-const express = require("express");
-const cors = require("cors");
+const express = require("express")
+const loggerMiddleware = require("./middleware/loggerMiddleware")
+const errorHandler = require("./middleware/errorHandler")
 
-const app = express();
+const app = express()
 
-app.use(cors());
-app.use(express.json());
+app.use(express.json())
 
-app.get("/", (req, res) => {
-  res.json({ message: "Hello from Node API 🚀" });
-});
+// ✅ request logging
+app.use(loggerMiddleware)
 
-app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
-});
+app.get('/', (req, res) => {
+  res.json({name: "Hello"});
+}) 
+
+// your routes here
+// app.use("/api/party", partyRoutes)
+
+// ❗ global error handler MUST be last
+app.use(errorHandler)
 
 const PORT = 8000;
 
