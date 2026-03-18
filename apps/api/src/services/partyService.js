@@ -341,6 +341,92 @@ async function deleteMenuItemAndRecalculateTotals({
     })
 
     return { success: true }
+  })  
+}
+
+async function addMenuItemAndRecalculateTotals({
+  partyMemberId,
+  name,
+  price,
+  userId
+}) {
+  return await prisma.$transaction(async (tx) => {
+
+    logger.info({
+      msg: "Adding menu item",
+      partyMemberId,
+      name,
+      price,
+      userId
+    })
+
+    const member = await tx.partyMember.findUnique({
+      where: { id: partyMemberId }
+    })
+
+    if (!member) {
+      logger.warn({
+        msg: "Party member not found",
+        partyMemberId
+      })
+      throw new NotFoundError("Party member not found")
+    }
+
+    if (member.userId !== userId) {
+      logger.warn({
+        msg: "Unauthorized menu item creation",
+        userId,
+        ownerId: member.userId
+      })
+      throw new UnauthorizedError("Cannot add item for another user")
+    }
+
+    const item = await tx.menuItem.create({
+      data: {
+        name,
+        price,
+        partyMemberId
+      }
+    })
+
+    logger.info({
+      msg: "Menu item created",
+      menuItemId: item.id
+    })
+
+    // Recalculate member total
+    const items = await tx.menuItem.findMany({
+      where: { partyMemberId }
+    })
+
+    const memberTotal = items.reduce((sum, i) => sum + i.price, 0)
+
+    await tx.partyMember.update({
+      where: { id: partyMemberId },
+      data: { totalPrice: memberTotal }
+    })
+
+    // Recalculate party total
+    const members = await tx.partyMember.findMany({
+      where: { partyId: member.partyId }
+    })
+
+    const partyTotal = members.reduce((sum, m) => sum + m.totalPrice, 0)
+
+    await tx.party.update({
+      where: { id: member.partyId },
+      data: { totalPrice: partyTotal }
+    })
+
+    logger.info({
+      msg: "Totals recalculated after adding item",
+      memberId: member.id,
+      partyId: member.partyId,
+      memberTotal,
+      partyTotal
+    })
+
+    return item
   })
 }
 
@@ -350,5 +436,6 @@ module.exports = {
   viewParty,
   deleteParty,
   getMenuItems,
+  addMenuItemAndRecalculateTotals,
   deleteMenuItemAndRecalculateTotals
 }
